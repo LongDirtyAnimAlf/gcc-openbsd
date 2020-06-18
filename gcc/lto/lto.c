@@ -3007,6 +3007,12 @@ read_cgraph_and_symbols (unsigned nfiles, const char **fnames)
   all_file_decl_data = NULL;
 }
 
+const char *
+fname_as_string(int pretty_p __attribute__((__unused__)))
+{
+	return NULL;
+}
+
 
 /* Materialize all the bodies for all the nodes in the callgraph.  */
 

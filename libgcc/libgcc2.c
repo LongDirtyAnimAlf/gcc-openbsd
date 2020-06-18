@@ -2226,6 +2226,7 @@ mprotect (char *addr, int len, int prot)
 #endif /* WINNT && ! __CYGWIN__ */
 
 #ifdef TRANSFER_FROM_TRAMPOLINE
+#include <sys/mman.h>
 TRANSFER_FROM_TRAMPOLINE
 #endif
 #endif /* L_trampoline */

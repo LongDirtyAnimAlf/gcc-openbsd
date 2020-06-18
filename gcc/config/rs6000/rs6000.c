@@ -6157,6 +6157,8 @@ rs6000_file_start (void)
   if (!(rs6000_default_cpu && rs6000_default_cpu[0])
       && !global_options_set.x_rs6000_cpu_index)
     {
+      /* Temporarily disabled as it overrides e.g., -mcpu=440 and -maltivec */
+#if 0
       fputs ("\t.machine ", asm_out_file);
       if ((rs6000_isa_flags & OPTION_MASK_MODULO) != 0)
 	fputs ("power9\n", asm_out_file);
@@ -6174,6 +6176,7 @@ rs6000_file_start (void)
 	fputs ("ppc64\n", asm_out_file);
       else
 	fputs ("ppc\n", asm_out_file);
+#endif
     }
 #endif
 

@@ -64,6 +64,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "optabs.h"
 #include "regs.h"
 #include "recog.h"
+#include "c-family/c-common.h"
 #include "diagnostic-core.h"
 #include "fold-const.h"
 #include "stor-layout.h"
@@ -83,6 +84,59 @@ along with GCC; see the file COPYING3.  If not see
 #include "real.h"
 #include "langhooks.h"
 #include "sbitmap.h"
+
+size_t
+strlcat(char *dst, const char *src, size_t dsize)
+{
+	const char *odst = dst;
+	const char *osrc = src;
+	size_t n = dsize;
+	size_t dlen;
+
+	/* Find the end of dst and adjust bytes left but don't go past end. */
+	while (n-- != 0 && *dst != '\0')
+		dst++;
+	dlen = dst - odst;
+	n = dsize - dlen;
+
+	if (n-- == 0)
+		return(dlen + strlen(src));
+	while (*src != '\0') {
+		if (n != 0) {
+			*dst++ = *src;
+			n--;
+		}
+		src++;
+	}
+	*dst = '\0';
+
+	return(dlen + (src - osrc));	/* count does not include NUL */
+}
+
+size_t
+strlcpy(char *dst, const char *src, size_t dsize)
+{
+	const char *osrc = src;
+	size_t nleft = dsize;
+
+	/* Copy as many bytes as will fit. */
+	if (nleft != 0) {
+		while (--nleft != 0) {
+			if ((*dst++ = *src++) == '\0')
+				break;
+		}
+	}
+
+	/* Not enough room in dst, add NUL and traverse rest of src. */
+	if (nleft == 0) {
+		if (dsize != 0)
+			*dst = '\0';		/* NUL-terminate dst */
+		while (*src++)
+			;
+	}
+
+	return(src - osrc - 1);	/* count does not include NUL */
+}
 
 bool
 default_legitimate_address_p (machine_mode mode ATTRIBUTE_UNUSED,
@@ -866,7 +920,7 @@ default_stack_protect_guard (void)
       rtx x;
 
       t = build_decl (UNKNOWN_LOCATION,
-		      VAR_DECL, get_identifier ("__stack_chk_guard"),
+		      VAR_DECL, get_identifier ("__guard_local"),
 		      ptr_type_node);
       TREE_STATIC (t) = 1;
       TREE_PUBLIC (t) = 1;
@@ -875,6 +929,8 @@ default_stack_protect_guard (void)
       TREE_THIS_VOLATILE (t) = 1;
       DECL_ARTIFICIAL (t) = 1;
       DECL_IGNORED_P (t) = 1;
+      DECL_VISIBILITY (t) = VISIBILITY_HIDDEN;
+      DECL_VISIBILITY_SPECIFIED (t) = 1;
 
       /* Do not share RTL as the declaration is visible outside of
 	 current function.  */
@@ -887,67 +943,72 @@ default_stack_protect_guard (void)
   return t;
 }
 
-static GTY(()) tree stack_chk_fail_decl;
+static GTY(()) int stack_protect_labelno;
 
 tree
 default_external_stack_protect_fail (void)
 {
-  tree t = stack_chk_fail_decl;
+  tree t, func, type, init, stack_smash_handler;
+  const char *tmp_name;
+  char *name;
+  size_t length;
+  char name_buf[32];
 
-  if (t == NULL_TREE)
-    {
-      t = build_function_type_list (void_type_node, NULL_TREE);
-      t = build_decl (UNKNOWN_LOCATION,
-		      FUNCTION_DECL, get_identifier ("__stack_chk_fail"), t);
-      TREE_STATIC (t) = 1;
-      TREE_PUBLIC (t) = 1;
-      DECL_EXTERNAL (t) = 1;
-      TREE_USED (t) = 1;
-      TREE_THIS_VOLATILE (t) = 1;
-      TREE_NOTHROW (t) = 1;
-      DECL_ARTIFICIAL (t) = 1;
-      DECL_IGNORED_P (t) = 1;
-      DECL_VISIBILITY (t) = VISIBILITY_DEFAULT;
-      DECL_VISIBILITY_SPECIFIED (t) = 1;
+  name = (char *)xmalloc(32);
+  if (NULL == (tmp_name = fname_as_string (0))) {
+    strlcpy (name, "*unknown*", 32);
+  } else {
+    strlcpy (name, tmp_name, 32);
+  }
+  
+  length = strlen (name);
+  /* Build a decl for __func__. */
+  type = build_array_type (char_type_node,
+			build_index_type (size_int (length)));
+  type = build_qualified_type (type, TYPE_QUAL_CONST);
 
-      stack_chk_fail_decl = t;
-    }
+  init = build_string (length + 1, name);
+  free ((char *) name);
+  TREE_TYPE (init) = type;
 
-  return build_call_expr (t, 0);
+  func = build_decl (UNKNOWN_LOCATION, VAR_DECL, NULL_TREE, type);
+  TREE_STATIC (func) = 1;
+  TREE_READONLY (func) = 1;
+  DECL_ARTIFICIAL (func) = 1;
+  ASM_GENERATE_INTERNAL_LABEL (name_buf, "LSSH", stack_protect_labelno++);
+  DECL_NAME (func) = get_identifier (name_buf);
+  DECL_INITIAL (func) = init;
+
+  assemble_variable (func, 0, 0, 0);
+
+  /* Build a decl for __stack_smash_handler. */
+  t = build_pointer_type (TREE_TYPE (func));
+  t = build_function_type_list (void_type_node, t, NULL_TREE);
+  t = build_decl (UNKNOWN_LOCATION,
+  		  FUNCTION_DECL, get_identifier ("__stack_smash_handler"), t);
+  /* t = build_fn_decl ("__stack_smash_handler", t); */
+  TREE_STATIC (t) = 1;
+  TREE_PUBLIC (t) = 1;
+  DECL_EXTERNAL (t) = 1;
+  TREE_USED (t) = 1;
+  TREE_THIS_VOLATILE (t) = 1;
+  TREE_NOTHROW (t) = 1;
+  DECL_ARTIFICIAL (t) = 1;
+  DECL_IGNORED_P (t) = 1;
+  DECL_VISIBILITY (t) = VISIBILITY_DEFAULT;
+  DECL_VISIBILITY_SPECIFIED (t) = 1;
+
+  stack_smash_handler = t;
+
+  /* Generate a call to __stack_smash_handler(__func__). */
+  t = build_fold_addr_expr (func);
+  return build_call_expr (stack_smash_handler, 1, t);
 }
 
 tree
 default_hidden_stack_protect_fail (void)
 {
-#ifndef HAVE_GAS_HIDDEN
   return default_external_stack_protect_fail ();
-#else
-  tree t = stack_chk_fail_decl;
-
-  if (!flag_pic)
-    return default_external_stack_protect_fail ();
-
-  if (t == NULL_TREE)
-    {
-      t = build_function_type_list (void_type_node, NULL_TREE);
-      t = build_decl (UNKNOWN_LOCATION, FUNCTION_DECL,
-		      get_identifier ("__stack_chk_fail_local"), t);
-      TREE_STATIC (t) = 1;
-      TREE_PUBLIC (t) = 1;
-      DECL_EXTERNAL (t) = 1;
-      TREE_USED (t) = 1;
-      TREE_THIS_VOLATILE (t) = 1;
-      TREE_NOTHROW (t) = 1;
-      DECL_ARTIFICIAL (t) = 1;
-      DECL_IGNORED_P (t) = 1;
-      DECL_VISIBILITY_SPECIFIED (t) = 1;
-      DECL_VISIBILITY (t) = VISIBILITY_HIDDEN;
-
-      stack_chk_fail_decl = t;
-    }
-
-  return build_call_expr (t, 0);
-#endif
 }
 
 bool

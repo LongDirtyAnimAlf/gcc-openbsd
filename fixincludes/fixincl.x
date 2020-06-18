@@ -7019,11 +7019,11 @@ static const char* apzSolaris_Complex_CxxPatch[] = { sed_cmd_z,
     "-e", "/#if[ \t]*!defined(__cplusplus)/c\\\n\
 #ifdef\t__cplusplus\\\n\
 extern \"C\" {\\\n\
-#endif",
+#endif\\\n",
     "-e", "/#endif[ \t]*\\/\\* !defined(__cplusplus) \\*\\//c\\\n\
 #ifdef\t__cplusplus\\\n\
 }\\\n\
-#endif",
+#endif\\\n",
     (char*)NULL };
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * *

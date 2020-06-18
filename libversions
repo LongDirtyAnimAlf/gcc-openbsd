@@ -1,0 +1,11 @@
+# This file automatically generated
+LIBestdc++_LTVERSION = -version-info 19:0
+LIBgfortran_LTVERSION = -version-info 8:0
+LIBobjc_LTVERSION = -version-info 8:0
+LIBlto_plugin_LTVERSION = -version-info 5:0
+LIBitm_LTVERSION = -version-info 4:0
+LIBatomic_LTVERSION = -version-info 3:0
+LIBquadmath_LTVERSION = -version-info 3:0
+LIBcc1_LTVERSION = -version-info 1:0
+LIBcc1plugin_LTVERSION = -version-info 1:0
+LIBcp1plugin_LTVERSION = -version-info 0:0

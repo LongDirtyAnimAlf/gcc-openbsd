@@ -570,6 +570,12 @@ go_localize_identifier (const char *ident)
   return identifier_to_locale (ident);
 }
 
+const char *
+fname_as_string(int pretty_p __attribute__((__unused__)))
+{
+	return NULL;
+}
+
 #undef LANG_HOOKS_NAME
 #undef LANG_HOOKS_INIT
 #undef LANG_HOOKS_OPTION_LANG_MASK

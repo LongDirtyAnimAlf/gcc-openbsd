@@ -2467,6 +2467,8 @@ struct GTY(()) ix86_frame
   HOST_WIDE_INT stack_realign_offset;
   HOST_WIDE_INT sse_reg_save_offset;
 
+  HOST_WIDE_INT local_size;
+
   /* When save_regs_using_mov is set, emit prologue using
      move instead of push instructions.  */
   bool save_regs_using_mov;

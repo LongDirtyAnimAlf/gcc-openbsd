@@ -11716,6 +11716,7 @@ ix86_compute_frame_layout (void)
 	}
     }
 
+  frame->local_size = size;
   frame->nregs = ix86_nsaved_regs ();
   frame->nsseregs = ix86_nsaved_sseregs ();
 
@@ -13783,6 +13784,9 @@ ix86_expand_prologue (void)
 	  RTX_FRAME_RELATED_P (insn) = 1;
 	}
     }
+
+  if (warn_stack_larger_than && frame.local_size > stack_larger_than_size)
+    warning (OPT_Wstack_larger_than_, "stack usage is %lld bytes", frame.local_size);
 
   int_registers_saved = (frame.nregs == 0);
   sse_registers_saved = (frame.nsseregs == 0);

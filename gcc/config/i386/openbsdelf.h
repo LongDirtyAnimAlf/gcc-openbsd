@@ -97,14 +97,18 @@ along with GCC; see the file COPYING3.  If not see
    %{shared:-shared} %{R*} \
    %{static:-Bstatic} \
    %{!static:-Bdynamic} \
+   %{rdynamic:-export-dynamic} \
    %{assert*} \
-   -dynamic-linker /usr/libexec/ld.so"
+   %{!shared:%{!-dynamic-linker:-dynamic-linker /usr/libexec/ld.so}} \
+   -L/usr/lib"
 
 #undef STARTFILE_SPEC
-#define STARTFILE_SPEC "\
-	%{!shared: %{pg:gcrt0%O%s} %{!pg:%{p:gcrt0%O%s} %{!p:crt0%O%s}} \
-	crtbegin%O%s} %{shared:crtbeginS%O%s}"
 
+#define SUBTARGET32_DEFAULT_CPU "i486"
+#define STARTFILE_SPEC "\
+	%{!shared: %{pg:gcrt0%O%s} %{!pg:%{p:gcrt0%O%s} \
+	%{!p:%{!static:crt0%O%s} %{static:%{nopie:crt0%O%s} \
+	%{!nopie:rcrt0%O%s}}}} crtbegin%O%s} %{shared:crtbeginS%O%s}"
 #undef ENDFILE_SPEC
 #define ENDFILE_SPEC "%{!shared:crtend%O%s} %{shared:crtendS%O%s}"
 

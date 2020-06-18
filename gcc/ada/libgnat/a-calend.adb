@@ -686,9 +686,7 @@ is
       type int_Pointer  is access all Interfaces.C.int;
       type long_Pointer is access all Interfaces.C.long;
 
-      type time_t is
-        range -(2 ** (Standard'Address_Size - Integer'(1))) ..
-              +(2 ** (Standard'Address_Size - Integer'(1)) - 1);
+      type time_t is new Long_Long_Integer;
       type time_t_Pointer is access all time_t;
 
       procedure localtime_tzoff

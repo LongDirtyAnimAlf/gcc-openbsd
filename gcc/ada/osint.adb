@@ -2244,6 +2244,13 @@ package body Osint is
          Start_Of_Suffix := End_Of_Prefix + Prog'Length + 1;
       end if;
 
+      if Nam = "gcc" and then
+         Name_Buffer (Start_Of_Prefix .. End_Of_Prefix) = "" and then
+         Name_Buffer (Start_Of_Suffix .. Name_Len) = ""
+      then
+         return new String'("egcc");
+      end if;
+
       --  Create the new program name
 
       return new String'
